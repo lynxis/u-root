@@ -27,6 +27,8 @@ import (
 	"github.com/u-root/u-root/pkg/uio"
 )
 
+var debug = func(string, ...interface{}) {}
+
 func probeIsolinuxFiles() []string {
 	files := make([]string, 0, 10)
 	// search order from the syslinux wiki
@@ -266,7 +268,7 @@ func (c *parser) appendFile(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Got config file %s:\n%s\n", r, string(config))
+	debug("Got config file %s:\n%s\n", r, string(config))
 	return c.append(ctx, string(config))
 }
 
