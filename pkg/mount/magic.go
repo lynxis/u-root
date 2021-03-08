@@ -58,6 +58,7 @@ var (
 	HUGETLBFS = []byte{0x95, 0x84, 0x58, 0xf6}
 	JFFS2     = []byte{0x72, 0xb6}
 	JFS       = []byte{0x31, 0x53, 0x46, 0x4a}
+	MDRAID    = []byte{0xa9, 0x2b, 0x4e, 0xfc}
 	MTD       = []byte{0x11, 0x30, 0x78, 0x54}
 	NFS       = []byte{0x69, 0x69}
 	NILFS     = []byte{0x34, 0x34}
@@ -115,6 +116,7 @@ var magics = []magic{
 	{magic: EXT3, name: "ext3", off: 0x438},
 	{magic: EXT2, name: "ext2", off: 0x438},
 	// We will always mount vfat; it's backward compatible (we think?)
+	{magic: MDRAID, name: "mdraid", off: 0x1000},
 	{magic: MSDOS, name: "vfat", off: 0},
 	{magic: SQUASHFS, name: "squashfs", flags: MS_RDONLY, off: 0},
 	{magic: ISOFS, name: "iso9660", flags: MS_RDONLY, off: 32768},
