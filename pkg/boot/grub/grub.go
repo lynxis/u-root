@@ -60,6 +60,7 @@ var anyEscape = regexp.MustCompile(`\\.{0,3}`)
 
 // mountFlags are the flags this grub interpreter uses to mount partitions.
 var mountFlags = uintptr(mount.ReadOnly)
+var debug = func(string, ...interface{}) {}
 
 // absFileScheme creates a file:/// scheme with an absolute path. Technically,
 // file schemes must be absolute paths and Go makes that assumption.
@@ -91,7 +92,7 @@ func ParseLocalConfig(ctx context.Context, diskDir string, devices block.BlockDe
 	// 'em all.
 	files, err := filepath.Glob(filepath.Join(diskDir, "EFI", "*", "grub.cfg"))
 	if err != nil {
-		log.Printf("[grub] Could not glob for %s/EFI/*/grub.cfg: %v", diskDir, err)
+		debug("[grub] Could not glob for %s/EFI/*/grub.cfg: %v", diskDir, err)
 	}
 	var relNames []string
 	for _, file := range files {
@@ -262,9 +263,9 @@ func (c *parser) appendFile(ctx context.Context, url string) error {
 	if len(config) > 500 {
 		// Avoid flooding the console on real systems
 		// TODO: do we want to pass a verbose flag or a logger?
-		log.Printf("[grub] Got config file %s", r)
+		debug("[grub] Got config file %s", r)
 	} else {
-		log.Printf("[grub] Got config file %s:\n%s\n", r, string(config))
+		debug("[grub] Got config file %s:\n%s\n", r, string(config))
 	}
 	return c.append(ctx, string(config))
 }
@@ -348,12 +349,12 @@ func (c *parser) append(ctx context.Context, config string) error {
 			})
 
 			if err := fs.Parse(kv[1:]); err != nil || fs.NArg() != 1 {
-				log.Printf("Warning: Grub parser could not parse %q", kv)
+				debug("Warning: Grub parser could not parse %q", kv)
 				continue
 			}
 			searchName := fs.Arg(0)
 			if *searchUUID && *searchLabel || *searchUUID && *searchFile || *searchLabel && *searchFile {
-				log.Printf("Warning: Grub parser found more than one search option in %q, skipping line", line)
+				debug("Warning: Grub parser found more than one search option in %q, skipping line", line)
 				continue
 			}
 			if !*searchUUID && !*searchLabel && !*searchFile {
@@ -365,12 +366,12 @@ func (c *parser) append(ctx context.Context, config string) error {
 			case *searchUUID:
 				d := c.devices.FilterFSUUID(searchName)
 				if len(d) != 1 {
-					log.Printf("Error: Expected 1 device with UUID %q, found %d", searchName, len(d))
+					debug("Error: Expected 1 device with UUID %q, found %d", searchName, len(d))
 					continue
 				}
 				mp, err := c.mountPool.Mount(d[0], mountFlags)
 				if err != nil {
-					log.Printf("Error: Could not mount %v: %v", d[0], err)
+					debug("Error: Could not mount %v: %v", d[0], err)
 					continue
 				}
 				setVal, err := absFileScheme(mp.Path)
@@ -381,16 +382,16 @@ func (c *parser) append(ctx context.Context, config string) error {
 			case *searchLabel:
 				d, err := c.devices.FilterPartLabel(searchName)
 				if err != nil {
-					log.Printf("Error: Could not search label %q: %v", searchName, err)
+					debug("Error: Could not search label %q: %v", searchName, err)
 					continue
 				}
 				if len(d) != 1 {
-					log.Printf("Error: Expected 1 device with label %q, found %d", searchName, len(d))
+					debug("Error: Expected 1 device with label %q, found %d", searchName, len(d))
 					continue
 				}
 				mp, err := c.mountPool.Mount(d[0], mountFlags)
 				if err != nil {
-					log.Printf("Error: Could not mount %v: %v", d[0], err)
+					debug("Error: Could not mount %v: %v", d[0], err)
 					continue
 				}
 				setVal, err := absFileScheme(mp.Path)
@@ -402,14 +403,14 @@ func (c *parser) append(ctx context.Context, config string) error {
 				// Make sure searchName stays in mountpoint. Remove "../" components.
 				cleanPath, err := filepath.Rel("/", filepath.Clean(filepath.Join("/", searchName)))
 				if err != nil {
-					log.Printf("Error: Could not clean path %q: %v", searchName, err)
+					debug("Error: Could not clean path %q: %v", searchName, err)
 					continue
 				}
 				// Search through all the devices for the file.
 				for _, d := range c.devices {
 					mp, err := c.mountPool.Mount(d, mountFlags)
 					if err != nil {
-						log.Printf("Warning: Could not mount %v: %v", mp, err)
+						debug("Warning: Could not mount %v: %v", mp, err)
 						continue
 					}
 					file := filepath.Join(mp.Path, cleanPath)
